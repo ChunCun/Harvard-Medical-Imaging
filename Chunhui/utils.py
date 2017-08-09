@@ -10,8 +10,6 @@ import scipy.misc
 import numpy as np
 from time import gmtime, strftime
 from six.moves import xrange
-from glob import glob
-import os
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -244,62 +242,6 @@ def visualize(sess, dcgan, config, option):
         for idx in range(64) + range(63, -1, -1)]
     make_gif(new_image_set, './samples/test_gif_merged.gif', duration=8)
 
-  elif option == 5:
-    batch_num = 1
-    input_w = 500
-    input_h = 500
-    output_w = 500
-    output_h = 500
-    data_number = 5000
-    file_name = 'AD_Corr_AD_pics'
-    
-    datafiles = glob(os.path.join("./data", file_name, '*.tiff'))
-    inputs = tf.placeholder(
-      tf.float32, [batch_num] + [output_h, output_w, 3], name='real_imags')
-#      data = datas[idx]
-    datas = [
-        get_image(datafile,
-                  input_height= input_h,
-                  input_width= input_w,
-                  resize_height= output_h,
-                  resize_width= output_w) for datafile in datafiles]
-    
-    DD = []
-    for idx in xrange(data_number):
-      data = datas[idx*batch_num:(idx+1)*batch_num]
-      D, D_logits = sess.run(dcgan.discriminator(inputs, reuse=True), feed_dict={inputs: data})
-      DD[idx*batch_num:(idx+1)*batch_num] = D
-#        print("[Sample] D: %.8f, D_logits: %.8f" % (D[idx2], D_logits[idx2]))
-    OutputFile = open('%s.txt' % (file_name), 'wb')
-    np.savetxt(OutputFile, DD, fmt='%.5f')
-  elif option == 6:
-    batch_num = 1
-    input_w = 500
-    input_h = 500
-    output_w = 500
-    output_h = 500
-    data_number = 5000
-    file_name = 'AD_Corr_AD_pics'
-
-    datafiles = glob(os.path.join("./data", file_name, '*.tiff'))
-    inputs = tf.placeholder(
-      tf.float32, [batch_num] + [output_h, output_w, 3], name='real_imags')
-    #      data = datas[idx]
-    datas = [
-      get_image(datafile,
-                input_height=input_h,
-                input_width=input_w,
-                resize_height=output_h,
-                resize_width=output_w) for datafile in datafiles]
-
-    DD = []
-    for idx in xrange(data_number):
-      data = datas[idx * batch_num:(idx + 1) * batch_num]
-      D, D_logits = sess.run(dcgan.discriminator_output_change(inputs, 2, reuse=True), feed_dict={inputs: data})
-      DD[idx * batch_num:(idx + 1) * batch_num] = D
-      #        print("[Sample] D: %.8f, D_logits: %.8f" % (D[idx2], D_logits[idx2]))
-    OutputFile = open('%s.txt' % (file_name), 'wb')
-    np.savetxt(OutputFile, DD, fmt='%.5f')
 
 def image_manifold_size(num_images):
   manifold_h = int(np.floor(np.sqrt(num_images)))

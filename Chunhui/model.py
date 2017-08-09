@@ -75,7 +75,7 @@ class DCGAN(object):
       self.c_dim = self.data_X[0].shape[-1]
     else:
       self.data = glob(os.path.join("./data", self.dataset_name, self.input_fname_pattern))
-      imreadImg = imread(self.data[0]);
+      imreadImg = imread(self.data[0]);#0 origin
       if len(imreadImg.shape) >= 3: #check if image is a non-grayscale image by checking channel number
         self.c_dim = imread(self.data[0]).shape[-1]
       else:
@@ -346,6 +346,51 @@ class DCGAN(object):
         h3 = linear(h2, 1, 'd_h3_lin')
         
         return tf.nn.sigmoid(h3), h3
+
+  def discriminator_output_change(self, image, numberH , y=None, reuse=False):
+    with tf.variable_scope("discriminator") as scope:
+      if reuse:
+        scope.reuse_variables()
+
+      if not self.y_dim:
+        h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
+        h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim * 2, name='d_h1_conv')))
+        h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim * 4, name='d_h2_conv')))
+        h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim * 8, name='d_h3_conv')))
+        h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h4_lin')
+
+        if numberH ==1:
+           return tf.nn.sigmoid(h4), h1
+        elif numberH ==2:
+           return tf.nn.sigmoid(h4), h2
+        elif numberH ==3:
+           return tf.nn.sigmoid(h4), h3
+        elif numberH ==4:
+           return tf.nn.sigmoid(h4), h4
+      else:
+        yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+        x = conv_cond_concat(image, yb)
+
+        h0 = lrelu(conv2d(x, self.c_dim + self.y_dim, name='d_h0_conv'))
+        h0 = conv_cond_concat(h0, yb)
+
+        h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim + self.y_dim, name='d_h1_conv')))
+        h1 = tf.reshape(h1, [self.batch_size, -1])
+        h1 = concat([h1, y], 1)
+
+        h2 = lrelu(self.d_bn2(linear(h1, self.dfc_dim, 'd_h2_lin')))
+        h2 = concat([h2, y], 1)
+
+        h3 = linear(h2, 1, 'd_h3_lin')
+
+        if numberH == 2:
+
+           return tf.nn.sigmoid(h3), h2
+
+        else:
+          return tf.nn.sigmoid(h3), h3
+
+
 
   def generator(self, z, y=None):
     with tf.variable_scope("generator") as scope:
